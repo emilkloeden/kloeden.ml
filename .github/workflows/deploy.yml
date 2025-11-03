@@ -34,7 +34,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
-          source: "apps/blog/frontend/dist/analog/public"
+          source: "apps/blog/frontend/dist/analog/public/*"
           target: "/var/www/blog"
           rm: true
 
