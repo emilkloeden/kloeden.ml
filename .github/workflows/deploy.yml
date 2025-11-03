@@ -37,6 +37,7 @@ jobs:
           source: "apps/blog/frontend/dist/analog/public/*"
           target: "/var/www/blog/"
           rm: true
+          debug: true
 
       # - name: Restart blog service
       #   uses: appleboy/ssh-action@v0.1.7
