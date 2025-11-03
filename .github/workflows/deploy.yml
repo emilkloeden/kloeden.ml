@@ -38,6 +38,7 @@ jobs:
           target: "/var/www/blog/"
           rm: true
           debug: true
+          strip_components: 5
 
       # - name: Restart blog service
       #   uses: appleboy/ssh-action@v0.1.7
