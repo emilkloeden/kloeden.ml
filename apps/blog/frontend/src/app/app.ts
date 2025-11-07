@@ -40,7 +40,9 @@ import PostAttributes from "./post-attributes";
 })
 export class AppComponent {
   protected readonly numLinksToShow = 5
-  public posts = injectContentFiles<PostAttributes>().sort((a, b) => {
+  public posts = injectContentFiles<PostAttributes>()
+  .filter((post) => !! post.attributes.date)
+  .sort((a, b) => {
     const dateA = new Date(a.attributes['date']);
     const dateB = new Date(b.attributes['date']);
     return dateB.getTime() - dateA.getTime();

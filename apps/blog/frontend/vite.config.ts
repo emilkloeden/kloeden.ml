@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 
 import { defineConfig } from 'vite';
-import analog from '@analogjs/platform';
+import analog, { PrerenderContentFile } from '@analogjs/platform';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
@@ -14,22 +14,35 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     analog({
+      ssr: true,
+      static: true,
       content: {
         highlighter: 'shiki',
         shikiOptions: {
           highlight: {
-            theme: 'ayu-dark'
+            theme: 'ayu-dark',
           },
           highlighter: {
-            additionalLangs: ['powershell']
-          }
-        }
+            additionalLangs: ['powershell'],
+          },
+        },
       },
       prerender: {
-        routes: ['/blog', '/blog/2022-12-27-my-first-post'],
+        routes: async () => [
+          '/',
+          '/blog',
+          {
+            contentDir: 'src/content/blog',
+            transform: (file: PrerenderContentFile) => {
+              // use the slug from frontmatter if defined, otherwise use the file's basename
+              const slug = file.attributes['slug'] || file.name;
+              return `/blog/${slug}`;
+            },
+          },
+        ],
       },
     }),
-    tailwindcss()
+    tailwindcss(),
   ],
   test: {
     globals: true,

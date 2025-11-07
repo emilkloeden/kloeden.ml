@@ -8,14 +8,19 @@ import PostAttributes from '../../post-attributes';
   selector: 'app-blog',
   imports: [RouterLink],
   template: `
-    <h1>Blog Archive</h1>
-
-    @for (post of posts; track post.attributes.slug) {
-    <a [routerLink]="['/blog/', post.attributes.slug]">
-      <h2 class="post__title">{{ post.attributes.title }}</h2>
-      <p class="post__desc">{{ post.attributes.description }}</p>
-    </a>
-    }
+    <div class="blog-content">
+      <header class="blog-post-header">
+        <h1>blog.kloeden.ml</h1>
+      </header>
+      @for (post of posts; track post.attributes.slug) {
+        @if(post.attributes.date) {
+        <a [routerLink]="['/blog/', post.attributes.slug]">
+          <h3 class="post__title">{{ post.attributes.title }}</h3>
+          <p class="post__desc">{{ post.attributes.description }}</p>
+        </a>
+        } 
+      }
+    </div>
   `,
   styles: `
     a {

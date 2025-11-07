@@ -3,6 +3,7 @@ import { AsyncPipe } from '@angular/common';
 import { injectContent, MarkdownComponent } from '@analogjs/content';
 
 import PostAttributes from '../../post-attributes';
+import { filter } from "rxjs/operators";
 
 @Component({
   selector: 'app-blog-post',
@@ -38,7 +39,9 @@ import PostAttributes from '../../post-attributes';
   `,
 })
 export default class BlogPostComponent {
-  readonly post$ = injectContent<PostAttributes>('slug');
+  readonly post$ = injectContent<PostAttributes>('slug').pipe(
+    filter((post) => !!post.attributes.date)
+  );
 
   formatDate(dateString: string | Date): string {
     const date = new Date(dateString);
