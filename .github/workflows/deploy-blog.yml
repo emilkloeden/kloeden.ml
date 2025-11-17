@@ -1,0 +1,40 @@
+name: Deploy Blog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/blog/**'
+      - '.github/workflows/deploy-blog.yml'
+      - '.github/workflows/detect-changes.yml'
+  pull_request:
+    paths:
+      - 'apps/blog/**'
+
+jobs:
+  detect:
+    uses: ./.github/workflows/detect-changes.yml
+
+  build-and-deploy:
+    needs: detect
+    if: ${{ needs.detect.outputs.blog_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - run: pnpm install
+      - run: pnpm --filter blog build
+
+      - name: Deploy blog via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/apps/blog/"
+          target: "/var/www/blog"
+          overwrite: true

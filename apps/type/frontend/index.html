@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Type</title>
+    <style>
+      :root {
+        --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono",
+          Menlo, Consolas, monospace;
+        --color-text-primary: #fafafa;
+        --color-text-accent: #3b82f6;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-sans);
+        color: var(--color-text-primary);
+        background-color: black;
+      }
+
+      p {
+        line-height: 1.5;
+        font-size: 1.5rem
+      }
+
+      body {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      main {
+        max-width: 150ch;
+        /* outline: 1px solid gold; */
+      }
+
+      #game,
+      #end-game {
+        padding: 0 0;
+        margin: 0 0;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+
+      #game {
+        display: flex;
+      }
+
+      #end-game {
+        /* padding: 1rem; */
+
+        button {
+          width: 100%;
+          border: none;
+  font-size: 3rem;
+  text-decoration: underline;
+        }
+      }
+
+      #text {
+        font-size: 3rem;
+      }
+
+      .correct {
+        color: var(--color-text-accent);
+      }
+      .invisible {
+        display: none;
+      }
+      .accent {
+        color: var(--color-text-accent);
+      }
+      .text-sm {
+        font-size: 1rem;
+      }
+      .text-lg {
+        font-size: 3rem;
+      }
+      .text-xl {
+        font-size: 4rem;
+      }
+      .flex { display: flex}
+      .flex-col {flex-direction: column;}
+      .flex-rol {flex-direction: row;}
+      .justify-center {justify-content: center;}
+      .items-center {align-items: center;}
+      .color-error { color: red}
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="game">
+        <p id="error" class="text-xl color-error">Now type...</p>
+        <p id="text" class="text-lg"></p>
+        <p id="timer"></p>
+      </div>
+      <div id="end-game" class="invisible">
+        <div>
+          <p class="flex flex-col justify-center items-center">wpm<span id="wpm" class="text-lg accent">0</span></p>
+          <p class="flex flex-col justify-center items-center">accuracy<span id="accuracy" class="text-lg accent">0</span></p>
+        </div>
+        <div class="flex flex-col items-center">
+          <p class="text-sm">Press <span class="accent">Space</span> or <span class="accent">Enter</span> to...</p>
+          <button type="button" onclick="restart()">RESTART</button>
+        </div>
+      </div>
+      <script>
+        const ONE_SECOND = 1000;
+        const NUM_WORDS = 30
+        const GAME_LENGTH = 30;
+
+        const GameState = {
+          UNSTARTED: "unstarted",
+          PLAYING: "playing",
+          FINISHED: "finished",
+        };
+
+        let state;
+
+        let seed = Math.floor(Date.now() / 1000);
+        const initialText =
+        "the of to and a in is it you that he was for on are with as I his they be at one have this from or had by hot but some what there we can out other were all your when up use word how said an each she which do their time if will way about many then them would write like so these her long make thing see him two has look more day could go come did my sound no most number who over know water than call first people may down side been now find any new work part take get place made live where after back little only round man year came show every good me give our under name very through just form much great think say help low line before turn cause same mean differ move right boy old too does tell sentence set three want air well also play small end put home read hand port large spell add even land here must big high such follow act why ask men change went light kind off need house picture try us again animal point mother world near build self earth father head stand own page should country found answer school grow study still learn plant cover food sun four thought let keep eye never last door between city tree cross since hard start might story saw far sea draw left late run don't while press close night real life few stop open seem together next white children begin got walk example ease paper often always music those both mark book letter until mile river car feet care second group carry took rain eat room friend began idea fish mountain north once base hear horse cut sure watch color face wood main enough plain girl usual young ready above ever red list though feel talk bird soon body dog family direct pose leave song measure state product black short numeral class wind question happen complete ship area half rock order fire south problem piece told knew pass farm top whole king size heard best hour better TRUE during hundred am remember step early hold west ground interest reach fast five sing listen six table travel less morning ten simple several vowel toward war lay against pattern slow center love person money serve appear road map science rule govern pull cold notice voice fall power town fine certain fly unit lead cry dark machine note wait plan figure star box noun field rest correct able pound done beauty drive stood contain front teach week final gave green oh quick develop sleep warm free minute strong special mind behind clear tail produce fact street inch lot nothing course stay wheel full force blue object decide surface deep moon island foot yet busy test record boat common gold possible plane age dry wonder laugh thousand ago ran check game shape yes hot miss brought heat snow bed bring sit perhaps fill east weight language among";
+        const clean = initialText.replace(/[^\w\s]|_/g, "").toLowerCase().split(" ");
+        let words = seededSelection(clean, NUM_WORDS, seed)
+
+
+        const gameRef = document.getElementById("game");
+        const endGameRef = document.getElementById("end-game");
+        const wpmRef = document.getElementById("wpm");
+        const accuracyRef = document.getElementById("accuracy");
+
+        let timeRemaining = GAME_LENGTH;
+
+        let countCorrect = 0;
+        let countIncorrect = 0;
+
+        // const chars = words.split("");
+
+        const timerRef = document.getElementById("timer");
+        const textRef = document.getElementById("text");
+        const errorRef = document.getElementById("error");
+
+        let curPos = 0;
+
+        // Get text from text element, rewrite it back as a series of spans
+        function setUpGame() {
+          // console.debug(chars);
+          // Clear textRef because we're going to replace it with one <span> per character
+          textRef.textContent = "";
+
+          words.forEach((w, index) => {
+            const wordNode = document.createElement("span");
+            // wordNode.style.display = "inline-block"
+            wordNode.setAttribute("data-word", w);
+            const wordChars = w.split("");
+            wordChars.forEach((c, cIndex) => {
+              const node = document.createElement("span");
+              node.setAttribute("data-char", c);
+              node.textContent = c;
+              wordNode.appendChild(node);
+              // Add an empty space char to the end of all but the last word
+              if (
+                index !== words.length - 1 &&
+                cIndex === wordChars.length - 1
+              ) {
+                const spaceNode = document.createElement("span");
+                spaceNode.setAttribute("data-char", " ");
+                spaceNode.textContent = " ";
+                wordNode.appendChild(spaceNode);
+              }
+            });
+
+            textRef.appendChild(wordNode);
+          });
+
+          state = GameState.UNSTARTED;
+          resetTimer();
+          resetCurrentCharPosition();
+          resetStats();
+        }
+
+        setUpGame();
+
+        // Get a reference to all spans to colorise when correct keypress event received
+        function getIndividualCharacterSpans() {
+          return Array.from(textRef.querySelectorAll("[data-char]"));
+        }
+
+        function resetStats() {
+          countCorrect = 0;
+          countIncorrect = 0;
+        }
+
+        function resetCurrentCharPosition() {
+          curPos = 0;
+          Array.from(document.querySelectorAll(".correct")).forEach((el) =>
+            el.classList.remove("correct")
+          );
+        }
+
+        function checkGameState() {
+          if (state === GameState.FINISHED) {
+            hide(gameRef);
+            calculatePerformance();
+            show(endGameRef);
+          } else {
+            hide(endGameRef);
+            show(gameRef);
+          }
+        }
+
+        const calculatePerformance = () => {
+          const completeWords = Array
+            .from(document.querySelectorAll("[data-word]"))
+            .filter((wordEl) => (
+              wordEl.querySelectorAll('.correct').length >= wordEl.querySelectorAll('[data-char]').length -1
+            )
+            ).length;
+          console.log('completeWords', completeWords)
+          const wpm = (completeWords * 60) / (GAME_LENGTH - timeRemaining);
+          const totalKeyPresses = countCorrect + countIncorrect;
+          const accuracy = totalKeyPresses === 0 ? "n/a" : `${Math.round(100.0 * countCorrect / totalKeyPresses, 2)}%`
+          
+          wpmRef.textContent = Math.round(wpm, 0);
+          accuracyRef.textContent = accuracy;
+        };
+
+        const startGame = () => (state = GameState.PLAYING);
+
+        const isCorrectKeyPress = (keyPressed, chars, curPos) => (keyPressed === chars[curPos])
+        const isValidSpaceKeyPress = (keyPressed, chars, curPos) => (keyPressed === " " && curPos > 0 && chars[curPos-1] === " ")
+
+        const handleKeypress = (ev) => {
+          const keyPressed = ev.key;
+          console.debug(state);
+          if (isUnstarted()) {
+            state = GameState.PLAYING;
+            startTimer();
+          }
+          if (isPlaying()) {
+            const chars = Array.from(
+              document.querySelectorAll("[data-char]")
+            ).map((el) => el.textContent);
+            console.log("chars", chars);
+            rn = getIndividualCharacterSpans();
+            while (chars[curPos] == " ") {
+              curPos++;
+            }
+            if (isCorrectKeyPress(keyPressed, chars, curPos)) {
+              errorRef.textContent = "";
+              countCorrect++;
+              rn[curPos].className = "correct";
+              console.log("curPos", curPos);
+              console.log(rn);
+              curPos++;
+            } else if (isValidSpaceKeyPress(keyPressed, chars, curPos)) {
+              errorRef.textContent = "";
+              countCorrect++
+            } else {
+              errorRef.textContent = keyPressed === " " ? "_" : keyPressed
+              countIncorrect++;
+            }
+            console.log('countCorrect', countCorrect, 'countIncorrect', countIncorrect)
+            if (curPos === rn.length) {
+              state = GameState.FINISHED;
+            }
+            checkGameState();
+            console.debug(ev);
+          } else if (isFinished()) {
+            if (keyPressed === " " || keyPressed === "Enter") {
+              restart();
+            }
+          }
+        };
+
+        function hide(element) {
+          element.style.display = "none";
+        }
+
+        function show(element) {
+          element.style.display = "flex";
+        }
+
+        function restart() {
+          hide(endGameRef);
+          setUpGame();
+          show(gameRef);
+        }
+
+        function resetTimer() {
+          timeRemaining = GAME_LENGTH;
+          timerRef.textContent = timeRemaining;
+        }
+
+        const isPlaying = () => state === GameState.PLAYING;
+        const isUnstarted = () => state === GameState.UNSTARTED;
+        const isFinished = () => state === GameState.FINISHED;
+
+        function decrementTimer() {
+          timeRemaining--;
+          timerRef.textContent = timeRemaining;
+        }
+
+        // Timer
+        let intervalId;
+        function startTimer() {
+          if (intervalId) {
+            stopTimer();
+          }
+          intervalId = setInterval(() => {
+            if (isPlaying(state)) {
+              decrementTimer();
+            }
+
+            if (timeRemaining <= 0) {
+              state = GameState.FINISHED;
+              stopTimer();
+            }
+
+            checkGameState();
+          }, ONE_SECOND);
+        }
+
+        const stopTimer = () => clearInterval(intervalId);
+
+        // Simple seeded RNG using mulberry32
+        function seededRandom(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        // Fisher-Yates shuffle with seeded random
+        function seededShuffle(array, seed) {
+          const random = seededRandom(seed);
+          const shuffled = [...array]; // Create a copy
+
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+
+          return shuffled;
+        }
+
+        // Get a random selection of fixed size
+        function seededSelection(array, size, seed) {
+          const shuffled = seededShuffle(array, seed);
+          return shuffled.slice(0, size);
+        }
+
+        // Add keypress handler
+        window.addEventListener("keypress", handleKeypress);
+      </script>
+    </main>
+  </body>
+</html>
