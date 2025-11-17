@@ -4,24 +4,24 @@ on:
   workflow_call:
     outputs:
       blog_changed:
-        description: "Whether blog changed"
+        description: "Whether blog.kloeden.ml changed"
         value: ${{ jobs.detect.outputs.blog_changed }}
-      html_changed:
-        description: "Whether htmlpage changed"
-        value: ${{ jobs.detect.outputs.html_changed }}
+      type_changed:
+        description: "Whether type.kloeden.ml changed"
+        value: ${{ jobs.detect.outputs.type_changed }}
 
 jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
       blog_changed: ${{ steps.blog.outputs.changed }}
-      html_changed: ${{ steps.html.outputs.changed }}
+      type_changed: ${{ steps.type.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for reliable diffs
 
-      - name: Detect changes in blog
+      - name: Detect changes in blog.kloeden.ml
         id: blog
         run: |
           base_ref="${{ github.event.before }}"
@@ -37,8 +37,8 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Detect changes in htmlpage
-        id: html
+      - name: Detect changes in type.kloeden.ml
+        id: type
         run: |
           base_ref="${{ github.event.before }}"
           head_ref="${{ github.sha }}"
@@ -47,7 +47,7 @@ jobs:
             head_ref="${{ github.event.pull_request.head.sha }}"
           fi
 
-          if git diff --quiet "$base_ref" "$head_ref" -- apps/htmlpage/; then
+          if git diff --quiet "$base_ref" "$head_ref" -- apps/type/; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
