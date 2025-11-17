@@ -1,0 +1,38 @@
+name: Deploy HTML Page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/type/**'
+      - '.github/workflows/deploy-type.yml'
+      - '.github/workflows/detect-changes.yml'
+  pull_request:
+    paths:
+      - 'apps/type/**'
+
+jobs:
+  detect:
+    uses: ./.github/workflows/detect-changes.yml
+
+  build-and-deploy:
+    needs: detect
+    if: ${{ needs.detect.outputs.html_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build static page
+        run: |
+          mkdir -p dist/type
+          cp -r apps/type/* dist/type/
+
+      - name: Deploy HTML page via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/type/"
+          target: "/var/www/type"
+          overwrite: true
